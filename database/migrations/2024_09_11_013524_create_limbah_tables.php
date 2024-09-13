@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('limbah', function (Blueprint $table) {
+        Schema::create('limbahs', function (Blueprint $table) {
             $table->id();
-            $table->string('kode_limbah');
-            $table->string('nama_limbah');
-            $table->timestamps();
+            $table->string('kode_limbah')->unique(); // Kode limbah harus unik
+            $table->string('nama_limbah'); // Nama limbah
+            $table->timestamps(); // Menyimpan timestamp untuk created_at dan updated_at
         });
     }
 

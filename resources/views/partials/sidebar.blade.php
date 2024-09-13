@@ -32,7 +32,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="calendar.html" class="dropdown-toggle no-arrow">
+                    <a href="{{ route('approval') }}" class="dropdown-toggle no-arrow">
                         <span class="micon bi bi-file-earmark-check"></span><span class="mtext">Approval</span>
                     </a>
                 </li>

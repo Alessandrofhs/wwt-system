@@ -17,13 +17,13 @@ class MasterDataController extends Controller
     {
         $validated = $request->validate([
             'kode_limbah' => 'required|string|max:255',
-            'nama_destinasi' => 'required|string|max:255',
+            'nama_limbah' => 'required|string|max:255',
         ]);
         try {
             // Simpan data ke database
             Limbah::create([
                 'kode_limbah' => $validated['kode_limbah'],
-                'nama_destinasi' => $validated['nama_destinasi'],
+                'nama_limbah' => $validated['nama_limbah'],
             ]);
 
             // Redirect dengan pesan sukses

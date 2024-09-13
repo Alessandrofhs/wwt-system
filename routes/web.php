@@ -38,8 +38,8 @@ Route::put('/destination/update/{id}', [MasterDataController::class, 'updatedest
 Route::delete('/destination/delete/{id}', [MasterDataController::class, 'deletedestination'])->name('destination.delete');
 
 Route::get('/report', [ReportController::class, 'index'])->name('report');
-Route::post('/report/add', [MasterDataController::class, 'addreport'])->name('report.add');
-Route::put('/report/update/{id}', [MasterDataController::class, 'updatereport'])->name('report.update');
-Route::delete('/report/delete/{id}', [MasterDataController::class, 'deletereport'])->name('report.delete');
+Route::post('/report/add', [ReportController::class, 'addreport'])->name('report.add');
+Route::put('/report/update/{id}', [ReportController::class, 'updatereport'])->name('report.update');
+Route::delete('/report/delete/{id}', [ReportController::class, 'deletereport'])->name('report.delete');
 
 Route::get('/approval', [ApprovalController::class, 'index'])->name('approval');

@@ -39,10 +39,9 @@
                     <div class="title">
                         <h4>Add Report</h4>
                     </div>
-                    <form action="{{ route('report.add') }}" method="POST" id="form-limbah">
+                    <form action="{{ route('report.add') }}" method="POST" id="form-limbah" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="_method" id="form_method" value="POST">
-                        <input type="hidden" name="id" id="report_id">
 
                         <!-- Step 1 -->
                         <div class="step" id="step-1">
@@ -53,15 +52,13 @@
                                         <select name="destination_id" class="form-control" id="destination_id" required>
                                             <option value="">-- Select Destination --</option>
                                             @foreach ($destination as $d)
-                                                <option value="{{ $d->id }}">{{ $d->nama_destinasi }}
-                                                </option>
+                                                <option value="{{ $d->id }}">{{ $d->nama_destinasi }}</option>
                                             @endforeach
                                         </select>
                                         @error('destination_id')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
                                     </div>
-
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -83,24 +80,24 @@
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label for="destination_id">Limbah Code</label>
-                                        <select name="destination_id" class="form-control" id="destination_id" required>
+                                        <label for="kode_limbah">Limbah Code</label>
+                                        <select name="kode_limbah[]" class="form-control" id="kode_limbah" required>
                                             <option value="">-- Select Limbah --</option>
-                                            @foreach ($destination as $d)
-                                                <option value="{{ $d->id }}">{{ $d->nama_destinasi }}
-                                                </option>
+                                            @foreach ($limbah as $l)
+                                                <option value="{{ $l->kode_limbah }}">{{ $l->kode_limbah }}</option>
                                             @endforeach
                                         </select>
-                                        @error('destination_id')
+                                        @error('kode_limbah.*')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label for="no_policy">Limbah Name</label>
-                                        <input type="text" name="no_policy" class="form-control" id="no_policy" required>
-                                        @error('no_policy')
+                                        <label for="nama_limbah">Limbah Name</label>
+                                        <input type="text" name="nama_limbah[]" class="form-control" id="nama_limbah"
+                                            required>
+                                        @error('nama_limbah.*')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
                                     </div>
@@ -109,15 +106,15 @@
                                     <div class="form-group">
                                         <label for="quantity">Quantity</label>
                                         <div class="d-flex">
-                                            <input type="number" name="quantity" class="form-control" id="quantity"
+                                            <input type="number" name="quantity[]" class="form-control" id="quantity"
                                                 placeholder="Enter quantity" required>
-                                            <select name="unit" class="form-control ml-2" id="unit"
+                                            <select name="unit[]" class="form-control ml-2" id="unit"
                                                 style="max-width: 80px;">
                                                 <option value="KG">KG</option>
                                                 <option value="PCS">PCS</option>
                                             </select>
                                         </div>
-                                        @error('quantity')
+                                        @error('quantity.*')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
                                     </div>
@@ -140,7 +137,6 @@
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
                                     </div>
-
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
@@ -152,12 +148,11 @@
                                         @enderror
                                     </div>
                                 </div>
-
                             </div>
                             <div class="d-flex justify-content-between">
                                 <button type="button" class="btn btn-secondary" id="prev-step">Previous</button>
-                                <button type="submit" class="btn btn-success"><i
-                                        class="icon-copy bi bi-plus"></i>Add</button>
+                                <button type="submit" class="btn btn-success"><i class="icon-copy bi bi-plus"></i>
+                                    Add</button>
                             </div>
                         </div>
                     </form>
@@ -244,6 +239,35 @@
         </div>
     @endforeach
     <!-- Script untuk mengisi form edit -->
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const nextStepButton = document.getElementById('next-step');
+                const prevStepButton = document.getElementById('prev-step');
+                const step1 = document.getElementById('step-1');
+                const step2 = document.getElementById('step-2');
+
+                nextStepButton.addEventListener('click', function() {
+                    step1.style.display = 'none';
+                    step2.style.display = 'block';
+                });
+
+                prevStepButton.addEventListener('click', function() {
+                    step1.style.display = 'block';
+                    step2.style.display = 'none';
+                });
+            });
+
+            function editLimbah(id, kode_limbah, nama_limbah) {
+                document.getElementById('report_id').value = id;
+                document.getElementById('kode_limbah').value = kode_limbah;
+                document.getElementById('nama_limbah').value = nama_limbah;
+                document.getElementById('form_method').value = 'PUT'; // Mengubah metode menjadi PUT untuk update
+                document.getElementById('step-1').style.display = 'none';
+                document.getElementById('step-2').style.display = 'block';
+            }
+        </script>
+    @endpush
     <script>
         function editLimbah(id, code, name) {
             // Set nilai pada form edit
@@ -278,6 +302,28 @@
             prevStep.addEventListener('click', function() {
                 step1.style.display = 'block'; // Tampilkan step 1
                 step2.style.display = 'none'; // Sembunyikan step 2
+            });
+        });
+    </script>
+    <script>
+        // Data limbah dari server
+        const limbahData = @json($limbah);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const kodeLimbahSelects = document.querySelectorAll('#kode_limbah');
+            kodeLimbahSelects.forEach(function(select) {
+                select.addEventListener('change', function() {
+                    const selectedKodeLimbah = this.value;
+                    const correspondingLimbah = limbahData.find(limbah => limbah.kode_limbah ===
+                        selectedKodeLimbah);
+
+                    if (correspondingLimbah) {
+                        // Temukan input nama limbah yang sesuai
+                        const namaLimbahInput = this.closest('.row').querySelector(
+                            'input[name="nama_limbah[]"]');
+                        namaLimbahInput.value = correspondingLimbah.nama_limbah;
+                    }
+                });
             });
         });
     </script>

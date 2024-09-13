@@ -8,13 +8,19 @@ use Illuminate\Database\Eloquent\Model;
 class FormLimbah extends Model
 {
     use HasFactory;
-    protected $table = 'form_limbah';
+    protected $fillable = [
+        'destination_id',
+        'no_policy',
+        'no_truck',
+        'description',
+        'photo',
+    ];
     public function destination()
     {
         return $this->belongsTo(Destination::class, 'destination_id');
     }
-    public function detailFormLimbah()
+    public function detailLimbah()
     {
-        return $this->hasOne(DetailFormLimbah::class, 'detail_id');
+        return $this->hasMany(DetailFormLimbah::class, 'form_limbah_id');
     }
 }

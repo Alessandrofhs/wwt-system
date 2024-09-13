@@ -76,6 +76,16 @@
                     <h4 class="text-blue h4">List Limbah</h4>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-md-12 d-flex justify-content-end">
+                    <div id="DataTables_Table_0_filter" class="dataTables_filter">
+                        <label>
+                            <input type="search" id="searchInput" class="form-control form-control-lg" placeholder="Search"
+                                aria-controls="DataTables_Table_0">
+                        </label>
+                    </div>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-striped" id="documentTableBody">
                     <thead>
@@ -150,6 +160,25 @@
         </div>
     @endforeach
     <!-- Script untuk mengisi form edit -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Ambil elemen input pencarian
+            $('#searchInput').on('keyup', function() {
+                // Ambil nilai input pencarian
+                var query = $(this).val().toLowerCase();
+
+                // Saring baris tabel berdasarkan input pencarian
+                $('#documentTableBody tr').each(function() {
+                    // Ambil teks dari setiap kolom
+                    var rowText = $(this).text().toLowerCase();
+
+                    // Tampilkan baris jika ada kecocokan, sembunyikan jika tidak
+                    $(this).toggle(rowText.indexOf(query) > -1);
+                });
+            });
+        });
+    </script>
     <script>
         function editLimbah(id, code, name) {
             // Set nilai pada form edit
@@ -169,4 +198,5 @@
             $('.alert').alert('close');
         }, 3000); // 3000 ms = 3 detik
     </script>
+
 @endsection

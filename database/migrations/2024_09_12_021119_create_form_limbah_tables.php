@@ -11,18 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('form_limbah', function (Blueprint $table) {
+        Schema::create('form_limbahs', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('detail_id');
-            $table->unsignedBigInteger('destination_id');
-            $table->string('no_policy')->nullable();
-            $table->integer('quantity')->nullable();
-            $table->string('no_truck')->nullable();
-            $table->string('description')->nullable();
-            $table->text('photo')->nullable();
-            $table->timestamps();
-            $table->foreign('detail_id')->references('id')->on('detail_form_limbah')->onDelete('cascade');
-            $table->foreign('destination_id')->references('id')->on('destination')->onDelete('cascade');
+            $table->foreignId('destination_id')->constrained()->onDelete('cascade'); // Menyimpan ID tujuan
+            $table->string('no_policy'); // Menyimpan nomor kebijakan
+            $table->string('no_truck'); // Menyimpan nomor truk
+            $table->text('description'); // Menyimpan deskripsi
+            $table->string('photo')->nullable(); // Menyimpan path foto (jika ada)
+            $table->timestamps(); // Menyimpan timestamp untuk created_at dan updated_at
         });
     }
 

@@ -8,10 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Destination extends Model
 {
     use HasFactory;
-    protected $table = 'destination';
-    protected $fillable = ([
+    protected $fillable = [
         'nama_destinasi'
-    ]);
+    ];
     public function formLimbah()
     {
         return $this->hasMany(FormLimbah::class, 'destination_id');
