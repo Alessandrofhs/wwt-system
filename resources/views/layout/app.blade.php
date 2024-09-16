@@ -26,7 +26,8 @@
     <link rel="stylesheet" type="text/css"
         href="{{ asset('deskapp-master/src/plugins/jvectormap/jquery-jvectormap-2.0.3.css') }}" />
     <link rel="stylesheet" type="text/css" href="{{ asset('deskapp-master/vendors/styles/style.css') }}" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.3/font/bootstrap-icons.min.css"
+        rel="stylesheet">
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-GBZ3SGGX85"></script>
@@ -73,6 +74,7 @@
     </div>
 
     <!-- js -->
+    @stack('scripts')
     <script src="{{ asset('deskapp-master/vendors/scripts/core.js') }}"></script>
     <script src="{{ asset('deskapp-master/vendors/scripts/script.min.js') }}"></script>
     <script src="{{ asset('deskapp-master/vendors/scripts/process.js') }}"></script>

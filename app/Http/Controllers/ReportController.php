@@ -18,72 +18,42 @@ class ReportController extends Controller
         $limbah = Limbah::all();
         return view('report', compact('report', 'destination', 'limbah'));
     }
-    public function addreport(Request $request)
-    {
-        // Validasi input request
-        $request->validate([
-            'destination_id' => 'required|exists:destinations,id',
-            'no_policy' => 'required|string',
-            'kode_limbah.*' => 'required|string',
-            'nama_limbah.*' => 'required|string',
-            'quantity.*' => 'required|numeric',
-            'unit.*' => 'required|string',
-            'no_truck' => 'required|string',
-            'description' => 'required|string',
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+    public function addReport(Request $request)
+{
+    dd($request->all());
+    // Validate only the required fields and form_data
+    $validated = $request->validate([
+        'form_data' => 'required|string',
+        'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ]);
 
-        // Mulai transaksi database
-        DB::beginTransaction();
-
-        try {
-            // Simpan data FormLimbah (form utama)
-            $formLimbah = new FormLimbah();
-            $formLimbah->destination_id = $request->destination_id;
-            $formLimbah->no_policy = $request->no_policy;
-            $formLimbah->no_truck = $request->no_truck;
-            $formLimbah->description = $request->description;
-
-            // Proses upload file
-            if ($request->hasFile('photo')) {
-                $file = $request->file('photo');
-                $filename = time() . '.' . $file->getClientOriginalExtension();
-                $file->move(public_path('uploads/photos'), $filename);
-                $formLimbah->photo = $filename;
-            }
-
-            // Simpan form limbah
-            $formLimbah->save();
-
-            // Simpan setiap detail limbah
-            foreach ($request->kode_limbah as $index => $kodeLimbah) {
-                // Cari atau buat data Limbah
-                $limbah = Limbah::firstOrCreate([
-                    'kode_limbah' => $kodeLimbah
-                ], [
-                    'nama_limbah' => $request->nama_limbah[$index],
-                ]);
-
-                // Simpan detail form limbah
-                $detailFormLimbah = new DetailFormLimbah();
-                $detailFormLimbah->form_limbah_id = $formLimbah->id;
-                $detailFormLimbah->limbah_id = $limbah->id;
-                $detailFormLimbah->quantity = $request->quantity[$index];
-                $detailFormLimbah->unit = $request->unit[$index];
-                $detailFormLimbah->save();
-            }
-
-            // Commit transaksi jika semua berhasil
-            DB::commit();
-
-            return redirect()->route('formLimbah.show', $formLimbah->id)
-                ->with('success', 'Form and Limbah details saved successfully!');
-        } catch (\Exception $e) {
-            // Rollback jika terjadi error
-            DB::rollBack();
-            return back()->withErrors('Failed to save data: ' . $e->getMessage());
-        }
+    // Save the main report data
+    $report = new FormLimbah();
+    $report->destination_id = $request->input('destination_id');
+    $report->no_policy = $request->input('no_policy');
+    $report->no_truck = $request->input('no_truck');
+    $report->description = $request->input('description');
+    if ($request->hasFile('photo')) {
+        $photo = $request->file('photo');
+        $path = $photo->store('photos', 'public');
+        $report->photo = $path;
     }
+    $report->save();
+
+    // Decode form_data and save detail form limbah
+    $details = json_decode($validated['form_data'], true);
+    foreach ($details as $detail) {
+        $detailFormLimbah = new DetailFormLimbah();
+        $detailFormLimbah->form_limbah_id = $report->id;
+        $detailFormLimbah->limbah_id = $detail['kode_limbah']; // Adjust according to your database structure
+        $detailFormLimbah->quantity = $detail['quantity'];
+        $detailFormLimbah->unit = $detail['unit'];
+        $detailFormLimbah->save();
+    }
+
+    return redirect()->back()->with('success', 'Report added successfully.');
+}
+
 
     public function updatereport() {}
     public function deletereport() {}

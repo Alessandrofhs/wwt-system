@@ -42,6 +42,7 @@
                     <form action="{{ route('report.add') }}" method="POST" id="form-limbah" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="_method" id="form_method" value="POST">
+                        <input type="hidden" name="form_data" id="form_data">
 
                         <!-- Step 1 -->
                         <div class="step" id="step-1">
@@ -49,7 +50,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="destination_id">Choose Destination</label>
-                                        <select name="destination_id" class="form-control" id="destination_id" required>
+                                        <select name="destination_id" class="form-control" id="destination_id">
                                             <option value="">-- Select Destination --</option>
                                             @foreach ($destination as $d)
                                                 <option value="{{ $d->id }}">{{ $d->nama_destinasi }}</option>
@@ -63,7 +64,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="no_policy">Vehicle Number</label>
-                                        <input type="text" name="no_policy" class="form-control" id="no_policy" required>
+                                        <input type="text" name="no_policy" class="form-control" id="no_policy">
                                         @error('no_policy')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
@@ -81,13 +82,13 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="kode_limbah">Limbah Code</label>
-                                        <select name="kode_limbah[]" class="form-control" id="kode_limbah" required>
+                                        <select name="kode_limbah" class="form-control" id="kode_limbah">
                                             <option value="">-- Select Limbah --</option>
                                             @foreach ($limbah as $l)
                                                 <option value="{{ $l->kode_limbah }}">{{ $l->kode_limbah }}</option>
                                             @endforeach
                                         </select>
-                                        @error('kode_limbah.*')
+                                        @error('kode_limbah')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
                                     </div>
@@ -95,9 +96,9 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="nama_limbah">Limbah Name</label>
-                                        <input type="text" name="nama_limbah[]" class="form-control" id="nama_limbah"
-                                            required>
-                                        @error('nama_limbah.*')
+                                        <input type="text" name="nama_limbah" class="form-control" id="nama_limbah"
+                                            readonly>
+                                        @error('nama_limbah')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
                                     </div>
@@ -106,15 +107,15 @@
                                     <div class="form-group">
                                         <label for="quantity">Quantity</label>
                                         <div class="d-flex">
-                                            <input type="number" name="quantity[]" class="form-control" id="quantity"
-                                                placeholder="Enter quantity" required>
-                                            <select name="unit[]" class="form-control ml-2" id="unit"
+                                            <input type="number" name="quantity" class="form-control" id="quantity"
+                                                placeholder="Enter quantity">
+                                            <select name="unit" class="form-control ml-2" id="unit"
                                                 style="max-width: 80px;">
                                                 <option value="KG">KG</option>
                                                 <option value="PCS">PCS</option>
                                             </select>
                                         </div>
-                                        @error('quantity.*')
+                                        @error('quantity')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
                                     </div>
@@ -122,17 +123,20 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="no_truck">No Truck</label>
-                                        <input type="text" name="no_truck" class="form-control" id="no_truck" required>
+                                        <input type="text" name="no_truck" class="form-control" id="no_truck">
                                         @error('no_truck')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
+                                @error('no_truck')
+                                    <div class="text-danger">{{ $message }}</div>
+                                @enderror
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label for="description">Description</label>
+                                        <label for="description">Description (Optional)</label>
                                         <textarea name="description" class="form-control" id="description" rows="1"
-                                            style="width: 100%; max-height: 70px;" required></textarea>
+                                            style="width: 100%; max-height: 70px;"></textarea>
                                         @error('description')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
@@ -140,9 +144,8 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label for="photo">Photo</label>
-                                        <input type="file" name="photo" class="form-control" id="photo"
-                                            required>
+                                        <label for="photo">Photo (Optional)</label>
+                                        <input type="file" name="photo" class="form-control" id="photo">
                                         @error('photo')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
@@ -151,9 +154,33 @@
                             </div>
                             <div class="d-flex justify-content-between">
                                 <button type="button" class="btn btn-secondary" id="prev-step">Previous</button>
-                                <button type="submit" class="btn btn-success"><i class="icon-copy bi bi-plus"></i>
-                                    Add</button>
+                                <button type="button" class="btn btn-success" id="add-detail">Add Detail</button>
                             </div>
+                        </div>
+
+                        <!-- Summary of added details -->
+                        <div id="details-summary" class="pd-20 mt-4">
+                            <h4>Details Summary</h4>
+                            <table class="table table-striped" id="details-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Limbah Code</th>
+                                        <th scope="col">Limbah Name</th>
+                                        <th scope="col">Quantity</th>
+                                        <th scope="col">Unit</th>
+                                        <th scope="col">Destination</th>
+                                        <th scope="col">No policy</th>
+                                        <th scope="col">No Truck</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary" id="submit-form">Submit</button>
                         </div>
                     </form>
                 </div>
@@ -203,128 +230,116 @@
             </div>
         </div>
     </div>
-    @foreach ($report as $item)
-        <div class="modal fade" id="deletemodal-{{ $item->id }}" tabindex="-1" role="dialog"
-            aria-labelledby="deleteModalLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-body text-center font-18">
-                        <h4 class="padding-top-30 mb-30 weight-500">
-                            Are you sure you want to delete?
-                        </h4>
-                        <div class="padding-bottom-30 row" style="max-width: 170px; margin: 0 auto">
-                            <div class="col-6">
-                                <button type="button"
-                                    class="btn btn-secondary border-radius-100 btn-block confirmation-btn"
-                                    data-dismiss="modal">
-                                    <i class="fa fa-times"></i>
-                                </button>
-                                NO
-                            </div>
-                            <div class="col-6">
-                                <form action="{{ route('limbah.delete', $item->id) }}" method="POST">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                        class="btn btn-primary border-radius-100 btn-block confirmation-btn">
-                                        <i class="fa fa-check"></i>
-                                    </button>
-                                    YES
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endforeach
-    <!-- Script untuk mengisi form edit -->
+
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const nextStepButton = document.getElementById('next-step');
-                const prevStepButton = document.getElementById('prev-step');
-                const step1 = document.getElementById('step-1');
-                const step2 = document.getElementById('step-2');
+                let detailsTable = document.getElementById('details-table').getElementsByTagName('tbody')[0];
+                let addButton = document.getElementById('add-detail');
+                let step1 = document.getElementById('step-1');
+                let step2 = document.getElementById('step-2');
+                let nextButton = document.getElementById('next-step');
+                let prevButton = document.getElementById('prev-step');
+                let kodeLimbahSelect = document.getElementById('kode_limbah');
+                let namaLimbahInput = document.getElementById('nama_limbah');
+                let quantityInput = document.getElementById('quantity');
+                let unitSelect = document.getElementById('unit');
+                let destinationSelect = document.getElementById('destination_id');
+                let noPolicyInput = document.getElementById('no_policy');
+                let noTruckInput = document.getElementById('no_truck');
+                let descriptionTextarea = document.getElementById('description');
+                let photoInput = document.getElementById('photo');
+                let formDataInput = document.getElementById('form_data');
 
-                nextStepButton.addEventListener('click', function() {
+                nextButton.addEventListener('click', function() {
                     step1.style.display = 'none';
                     step2.style.display = 'block';
                 });
 
-                prevStepButton.addEventListener('click', function() {
+                prevButton.addEventListener('click', function() {
                     step1.style.display = 'block';
                     step2.style.display = 'none';
                 });
-            });
 
-            function editLimbah(id, kode_limbah, nama_limbah) {
-                document.getElementById('report_id').value = id;
-                document.getElementById('kode_limbah').value = kode_limbah;
-                document.getElementById('nama_limbah').value = nama_limbah;
-                document.getElementById('form_method').value = 'PUT'; // Mengubah metode menjadi PUT untuk update
-                document.getElementById('step-1').style.display = 'none';
-                document.getElementById('step-2').style.display = 'block';
-            }
-        </script>
-    @endpush
-    <script>
-        function editLimbah(id, code, name) {
-            // Set nilai pada form edit
-            document.getElementById('limbah_id').value = id;
-            document.getElementById('kode_limbah').value = code;
-            document.getElementById('nama_limbah').value = name;
+                kodeLimbahSelect.addEventListener('change', function() {
+                    let selectedCode = kodeLimbahSelect.value;
+                    let limbah = @json($limbah);
 
-            // Ubah method form menjadi PUT untuk update
-            document.getElementById('form_method').value = 'PUT';
-
-            // Set action URL ke route update
-            document.querySelector('form').action = '{{ route('limbah.update', ':id') }}'.replace(':id', id);
-        }
-
-        // Menyembunyikan alert setelah 3 detik
-        setTimeout(function() {
-            $('.alert').alert('close');
-        }, 3000); // 3000 ms = 3 detik
-        document.addEventListener('DOMContentLoaded', function() {
-            const step1 = document.getElementById('step-1');
-            const step2 = document.getElementById('step-2');
-            const nextStep = document.getElementById('next-step');
-            const prevStep = document.getElementById('prev-step');
-
-            // Event listener untuk tombol Next
-            nextStep.addEventListener('click', function() {
-                step1.style.display = 'none'; // Sembunyikan step 1
-                step2.style.display = 'block'; // Tampilkan step 2
-            });
-
-            // Event listener untuk tombol Previous
-            prevStep.addEventListener('click', function() {
-                step1.style.display = 'block'; // Tampilkan step 1
-                step2.style.display = 'none'; // Sembunyikan step 2
-            });
-        });
-    </script>
-    <script>
-        // Data limbah dari server
-        const limbahData = @json($limbah);
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const kodeLimbahSelects = document.querySelectorAll('#kode_limbah');
-            kodeLimbahSelects.forEach(function(select) {
-                select.addEventListener('change', function() {
-                    const selectedKodeLimbah = this.value;
-                    const correspondingLimbah = limbahData.find(limbah => limbah.kode_limbah ===
-                        selectedKodeLimbah);
-
-                    if (correspondingLimbah) {
-                        // Temukan input nama limbah yang sesuai
-                        const namaLimbahInput = this.closest('.row').querySelector(
-                            'input[name="nama_limbah[]"]');
-                        namaLimbahInput.value = correspondingLimbah.nama_limbah;
+                    let selectedLimbah = limbah.find(limbah => limbah.kode_limbah === selectedCode);
+                    if (selectedLimbah) {
+                        namaLimbahInput.value = selectedLimbah.nama_limbah;
+                        namaLimbahInput.setAttribute('readonly', true);
+                    } else {
+                        namaLimbahInput.value = '';
+                        namaLimbahInput.removeAttribute('readonly');
                     }
                 });
+
+                addButton.addEventListener('click', function() {
+                    let kodeLimbah = kodeLimbahSelect.value;
+                    let namaLimbah = namaLimbahInput.value;
+                    let quantity = quantityInput.value;
+                    let unit = unitSelect.value;
+                    let destination = destinationSelect.options[destinationSelect.selectedIndex].text;
+                    let noPolicy = noPolicyInput.value;
+                    let noTruck = noTruckInput.value;
+
+                    if (kodeLimbah && namaLimbah && quantity && unit) {
+                        let row = detailsTable.insertRow();
+                        row.insertCell(0).textContent = kodeLimbah;
+                        row.insertCell(1).textContent = namaLimbah;
+                        row.insertCell(2).textContent = quantity;
+                        row.insertCell(3).textContent = unit;
+                        row.insertCell(4).textContent = destination;
+                        row.insertCell(5).textContent = noPolicy;
+                        row.insertCell(6).textContent = noTruck;
+
+                        let actionCell = row.insertCell(7);
+                        let removeButton = document.createElement('button');
+                        removeButton.className = 'btn btn-danger btn-sm';
+                        removeButton.innerHTML = '<i class="icon-copy bi bi-trash"></i>';
+                        removeButton.addEventListener('click', function() {
+                            detailsTable.deleteRow(row.rowIndex - 1);
+                        });
+                        actionCell.appendChild(removeButton);
+
+                        kodeLimbahSelect.value = '';
+                        namaLimbahInput.value = '';
+                        namaLimbahInput.removeAttribute('readonly');
+                        quantityInput.value = '';
+                        unitSelect.value = 'KG';
+                        noPolicyInput.value = '';
+                        noTruckInput.value = '';
+                    } else {
+                        alert('Please fill all fields before adding.');
+                    }
+                });
+
+                document.querySelector('form').addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    let form = this;
+                    form.querySelector('input[name="form_data"]').value = JSON.stringify(getDetails());
+                    form.submit(); // Submit the form with the form_data included
+                });
+
+                function getDetails() {
+                    let details = [];
+                    document.getElementById('details-table').querySelectorAll('tr').forEach(row => {
+                        let cells = row.querySelectorAll('td');
+                        details.push({
+                            kode_limbah: cells[0].textContent,
+                            nama_limbah: cells[1].textContent,
+                            quantity: cells[2].textContent,
+                            unit: cells[3].textContent,
+                            destination: cells[4].textContent,
+                            no_policy: cells[5].textContent,
+                            no_truck: cells[6].textContent
+                        });
+                    });
+                    return details;
+                }
+
             });
-        });
-    </script>
+        </script>
+    @endpush
 @endsection
