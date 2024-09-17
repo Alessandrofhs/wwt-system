@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('destination_id')->constrained()->onDelete('cascade'); // Menyimpan ID tujuan
             $table->string('no_policy'); // Menyimpan nomor kebijakan
             $table->string('no_truck'); // Menyimpan nomor truk
+            $table->string('status')->nullable();
             $table->text('description'); // Menyimpan deskripsi
             $table->string('photo')->nullable(); // Menyimpan path foto (jika ada)
             $table->timestamps(); // Menyimpan timestamp untuk created_at dan updated_at

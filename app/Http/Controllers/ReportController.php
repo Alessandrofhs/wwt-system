@@ -13,47 +13,79 @@ class ReportController extends Controller
 {
     public function index()
     {
-        $report = FormLimbah::orderBy('updated_at', 'desc')->with('destination', 'detailFormLimbah')->get();
+        $report = FormLimbah::orderBy('updated_at', 'desc')->with('destination', 'detailLimbah')->get();
         $destination = Destination::all();
         $limbah = Limbah::all();
         return view('report', compact('report', 'destination', 'limbah'));
     }
     public function addReport(Request $request)
-{
-    dd($request->all());
-    // Validate only the required fields and form_data
-    $validated = $request->validate([
-        'form_data' => 'required|string',
-        'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-    ]);
+    {
+        // Validate the form_data field
+        $validated = $request->validate([
+            'form_data' => 'required|string', // form_data should be a JSON string
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // Validate photo if exists
+        ]);
 
-    // Save the main report data
-    $report = new FormLimbah();
-    $report->destination_id = $request->input('destination_id');
-    $report->no_policy = $request->input('no_policy');
-    $report->no_truck = $request->input('no_truck');
-    $report->description = $request->input('description');
-    if ($request->hasFile('photo')) {
-        $photo = $request->file('photo');
-        $path = $photo->store('photos', 'public');
-        $report->photo = $path;
+        // Decode form_data
+        $formData = json_decode($validated['form_data'], true);
+
+        // Debugging to see the structure of form_data
+
+
+        // Check if decoding succeeded and formData is an array
+        if (!is_array($formData)) {
+            return redirect()->back()->withErrors('Invalid form data format.');
+        }
+
+        // Extract form_limbah data and details
+        $formLimbahData = $formData['form_limbah'] ?? null;
+
+        $details = $formData['details'] ?? [];
+
+
+        // Make sure form_limbah data is present
+        if (!$formLimbahData) {
+            return redirect()->back()->withErrors('Form Limbah data is missing.');
+        }
+
+        // Create and save the main report data (Form Limbah)
+        $report = new FormLimbah();
+        $report->destination_id = $formLimbahData['destination_id'] ?? null;
+        $report->no_policy = $formLimbahData['no_policy'] ?? null;
+        $report->no_truck = $formLimbahData['no_truck'] ?? null;
+        $report->status = "Pending";
+        $report->description = $formLimbahData['description'] ?? null;
+
+        // Handle photo upload if exists
+        if ($request->hasFile('photo')) {
+            $photo = $request->file('photo');
+            $path = $photo->store('photos', 'public');
+            $report->photo = $path;
+        }
+
+        // Save the Form Limbah to the database
+        $report->save();
+
+        // Save the details (assumed to be in 'details' key in form_data)
+        if (is_array($details)) {
+            foreach ($details as $detail) {
+                $detailFormLimbah = new DetailFormLimbah();
+                $detailFormLimbah->form_limbah_id = $report->id;
+                $detailFormLimbah->limbah_id = $detail['kode_limbah'] ?? null; // Assuming 'kode_limbah' maps to 'limbah_id'
+                $detailFormLimbah->quantity = $detail['quantity'] ?? 0;
+                $detailFormLimbah->unit = $detail['unit'] ?? 'KG'; // Default unit if not provided
+                $detailFormLimbah->save();
+            }
+        }
+
+        return redirect()->back()->with('success', 'Report added successfully.');
     }
-    $report->save();
-
-    // Decode form_data and save detail form limbah
-    $details = json_decode($validated['form_data'], true);
-    foreach ($details as $detail) {
-        $detailFormLimbah = new DetailFormLimbah();
-        $detailFormLimbah->form_limbah_id = $report->id;
-        $detailFormLimbah->limbah_id = $detail['kode_limbah']; // Adjust according to your database structure
-        $detailFormLimbah->quantity = $detail['quantity'];
-        $detailFormLimbah->unit = $detail['unit'];
-        $detailFormLimbah->save();
+    public function getDetails($id)
+    {
+        $details = DetailFormLimbah::with('limbah')->where('form_limbah_id', $id)->get();
+        // dd($details);
+        return response()->json(['details' => $details]);
     }
-
-    return redirect()->back()->with('success', 'Report added successfully.');
-}
-
 
     public function updatereport() {}
     public function deletereport() {}

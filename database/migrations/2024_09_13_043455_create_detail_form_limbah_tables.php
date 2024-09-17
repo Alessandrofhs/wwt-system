@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('detail_form_limbah', function (Blueprint $table) {
+        Schema::create('detail_form_limbahs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('form_limbah_id')->constrained()->onDelete('cascade'); // Menyimpan ID form limbah
             $table->foreignId('limbah_id')->constrained()->onDelete('cascade'); // Menyimpan ID limbah
