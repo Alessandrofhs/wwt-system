@@ -87,6 +87,45 @@ class ReportController extends Controller
         return response()->json(['details' => $details]);
     }
 
-    public function updatereport() {}
+    public function update_details(Request $request, $id)
+    {
+        // Validasi form
+        $request->validate([
+            'destination_id' => 'required_if:is_edit_mode,false|nullable',
+            'no_policy' => 'required_if:is_edit_mode,false|nullable',
+            'no_truck' => 'required_if:is_edit_mode,false|nullable',
+            'description' => 'required',
+            'details.*.kode_limbah' => 'required',
+            'details.*.quantity' => 'required|numeric',
+            'details.*.unit' => 'required',
+        ]);
+
+        // Temukan FormLimbah
+        $formLimbah = FormLimbah::findOrFail($id);
+
+        // Update FormLimbah jika tidak dalam mode edit
+        if (!$request->has('is_edit_mode') || !$request->is_edit_mode) {
+            $formLimbah->destination_id = $request->input('form_limbah.destination_id');
+            $formLimbah->no_policy = $request->input('form_limbah.no_policy');
+            $formLimbah->no_truck = $request->input('form_limbah.no_truck');
+            $formLimbah->description = $request->input('form_limbah.description');
+            $formLimbah->save();
+        }
+
+        // Update DetailFormLimbah
+        $details = $request->input('details');
+        foreach ($details as $detail) {
+            $detailFormLimbah = DetailFormLimbah::where('form_limbah_id', $formLimbah->id)
+                ->where('kode_limbah', $detail['kode_limbah'])
+                ->first();
+            if ($detailFormLimbah) {
+                $detailFormLimbah->quantity = $detail['quantity'];
+                $detailFormLimbah->unit = $detail['unit'];
+                $detailFormLimbah->save();
+            }
+        }
+
+        return redirect()->route('form_limbahs.show', $id)->with('success', 'Data berhasil diperbarui.');
+    }
     public function deletereport() {}
 }

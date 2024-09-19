@@ -39,7 +39,8 @@ Route::delete('/destination/delete/{id}', [MasterDataController::class, 'deleted
 
 Route::get('/report', [ReportController::class, 'index'])->name('report');
 Route::post('/report/add', [ReportController::class, 'addReport'])->name('report.add');
-Route::put('/report/update/{id}', [ReportController::class, 'updatereport'])->name('report.update');
+Route::put(uri: '/report/update/{id}', [ReportController::class, 'updatereport'])->name('report.update');
+Route::put(uri: '/report/update/details/{id}', [ReportController::class, 'updatedetails'])->name('details.update');
 Route::delete('/report/delete/{id}', [ReportController::class, 'deletereport'])->name('report.delete');
 Route::get('/report/{id}/details', [ReportController::class, 'getDetails']);
 

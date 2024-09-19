@@ -282,6 +282,13 @@
             let nextButton = document.getElementById('next-step');
             let prevButton = document.getElementById('prev-step');
 
+            let isEditMode = false;
+            let rowToEdit = null;
+
+            function updatePreviousButtonState() {
+                prevButton.disabled = detailsTable.rows.length === 0;
+            }
+
             nextButton.addEventListener('click', function() {
                 step1.style.display = 'none';
                 step2.style.display = 'block';
@@ -305,63 +312,113 @@
                 }
             });
 
-            addButton.addEventListener('click', function() {
-                let kodeLimbah = kodeLimbahSelect.value;
-                let namaLimbah = namaLimbahInput.value;
-                let quantity = quantityInput.value;
-                let unit = unitSelect.value;
-                let destination = destinationSelect.options[destinationSelect.selectedIndex].text;
-                let noPolicy = noPolicyInput.value;
-                let noTruck = noTruckInput.value;
+            function editDetail(row) {
+                rowToEdit = row; // Simpan referensi ke baris yang diedit
+                let cells = row.querySelectorAll('td');
+                kodeLimbahSelect.value = cells[0].textContent.trim();
+                namaLimbahInput.value = cells[1].textContent.trim();
+                quantityInput.value = cells[2].textContent.trim();
+                unitSelect.value = cells[3].textContent.trim();
 
-                if (kodeLimbah && namaLimbah && quantity && unit) {
-                    let row = detailsTable.insertRow();
-                    row.insertCell(0).textContent = kodeLimbah;
-                    row.insertCell(1).textContent = namaLimbah;
-                    row.insertCell(2).textContent = quantity;
-                    row.insertCell(3).textContent = unit;
-                    row.insertCell(4).textContent = destination;
-                    row.insertCell(5).textContent = noPolicy;
-                    row.insertCell(6).textContent = noTruck;
+                // Set mode edit
+                isEditMode = true;
+                addButton.textContent = 'Save'; // Ubah label tombol menjadi 'Save'
 
-                    let actionCell = row.insertCell(7);
-                    let removeButton = document.createElement('button');
-                    removeButton.className = 'btn btn-danger btn-sm';
-                    removeButton.innerHTML = '<i class="icon-copy bi bi-trash"></i>';
-                    removeButton.addEventListener('click', function() {
-                        detailsTable.deleteRow(row.rowIndex);
-                    });
-                    actionCell.appendChild(removeButton);
-
-                    // kodeLimbahSelect.value = '';
-                    // namaLimbahInput.value = '';
-                    // namaLimbahInput.removeAttribute('readonly');
-                    // quantityInput.value = '';
-                    // unitSelect.value = '';
-                    // noPolicyInput.value = '';
-                    // noTruckInput.value = '';
-                } else {
-                    alert('Please fill all fields before adding.');
-                }
-            });
+                // Tampilkan Step 2 dan sembunyikan Step 1
+                step1.style.display = 'none';
+                step2.style.display = 'block';
+            }
 
             document.getElementById('data-form').addEventListener('submit', function(event) {
                 event.preventDefault();
-                let form = this;
+                if (validateForm()) {
+                    let formData = {
+                        form_limbah: {
+                            destination_id: isEditMode ? formDataInput.dataset.oldDestinationId :
+                                destinationSelect.value,
+                            no_policy: isEditMode ? formDataInput.dataset.oldNoPolicy : noPolicyInput
+                                .value,
+                            no_truck: isEditMode ? formDataInput.dataset.oldNoTruck : noTruckInput
+                                .value,
+                            description: descriptionTextarea.value
+                        },
+                        details: getDetails(),
+                        is_edit_mode: isEditMode // Tambahkan parameter untuk menandakan mode edit
+                    };
 
-                let formData = {
-                    form_limbah: {
-                        destination_id: destinationSelect.value,
-                        no_policy: noPolicyInput.value,
-                        no_truck: noTruckInput.value,
-                        description: descriptionTextarea.value
-                    },
-                    details: getDetails()
-                };
+                    formDataInput.value = JSON.stringify(formData);
 
-                formDataInput.value = JSON.stringify(formData);
+                    this.submit();
+                }
+            });
 
-                form.submit();
+
+            function showDetail(id) {
+                fetch(`/report/${id}/details`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Data received:', data); // Debugging
+
+                        // Clear existing rows
+                        detailsTable.innerHTML = '';
+
+                        // Add new rows to the table
+                        data.details.forEach((detail) => {
+                            let row = detailsTable.insertRow();
+                            row.insertCell(0).textContent = detail.limbah.kode_limbah;
+                            row.insertCell(1).textContent = detail.limbah.nama_limbah;
+                            row.insertCell(2).textContent = detail.quantity;
+                            row.insertCell(3).textContent = detail.unit;
+
+                            let actionCell = row.insertCell(4);
+                            // Create edit button
+                            let editButton = document.createElement('button');
+                            editButton.className = 'btn btn-warning btn-sm';
+                            editButton.innerHTML = '<i class="icon-copy bi bi-pencil"></i>';
+                            editButton.addEventListener('click', function() {
+                                editDetail(row);
+                            });
+                            actionCell.appendChild(editButton);
+
+                            // Create remove button
+                            let removeButton = document.createElement('button');
+                            removeButton.className = 'btn btn-danger btn-sm';
+                            removeButton.innerHTML = '<i class="icon-copy bi bi-trash"></i>';
+                            removeButton.addEventListener('click', function() {
+                                detailsTable.deleteRow(row.rowIndex);
+                                updatePreviousButtonState();
+                            });
+                            actionCell.appendChild(removeButton);
+                        });
+
+                        updatePreviousButtonState();
+                    })
+                    .catch(error => console.error('Error fetching details:', error));
+            }
+
+            // Attach the showDetail function to the detail button
+            window.detail = function(id) {
+                showDetail(id);
+            };
+
+            // Event listener for form submission
+            document.getElementById('data-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+                if (validateForm()) {
+                    let formData = {
+                        form_limbah: {
+                            destination_id: destinationSelect.value,
+                            no_policy: noPolicyInput.value,
+                            no_truck: noTruckInput.value,
+                            description: descriptionTextarea.value
+                        },
+                        details: getDetails()
+                    };
+
+                    formDataInput.value = JSON.stringify(formData);
+
+                    this.submit();
+                }
             });
 
             function getDetails() {
@@ -380,63 +437,29 @@
                 return details;
             }
 
-            function showDetail(id) {
-                fetch(`/report/${id}/details`)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Data received:', data); // Debugging
-
-                        // Clear existing rows
-                        const detailsTable = document.getElementById('details-table').getElementsByTagName(
-                            'tbody')[0];
-                        detailsTable.innerHTML = '';
-
-                        // Add new rows to the table
-                        data.details.forEach(detail => {
-                            console.log(detail)
-                            let row = detailsTable.insertRow();
-                            row.insertCell(0).textContent = detail.limbah.kode_limbah;
-                            row.insertCell(1).textContent = detail.limbah.nama_limbah;
-                            row.insertCell(2).textContent = detail.quantity;
-                            row.insertCell(3).textContent = detail.unit;
-
-                            let actionCell = row.insertCell(4);
-                            let removeButton = document.createElement('button');
-                            removeButton.className = 'btn btn-danger btn-sm';
-                            removeButton.innerHTML = '<i class="icon-copy bi bi-trash"></i>';
-                            removeButton.addEventListener('click', function() {
-                                detailsTable.deleteRow(row.rowIndex);
-                            });
-                            actionCell.appendChild(removeButton);
-                        });
-                    })
-                    .catch(error => console.error('Error fetching details:', error));
+            function closeForm() {
+                isEditMode = false;
+                addButton.textContent = 'Add'; // Ubah label tombol kembali ke 'Add'
+                step1.style.display = 'block';
+                step2.style.display = 'none';
             }
 
-            window.detail = function(id) {
-                showDetail(id);
-            };
+            // Initial check for the Previous button state
+            updatePreviousButtonState();
 
-            function toggleButton() {
-                // Cek apakah ada data pada tbody
-                if ($('#details-table tbody tr').length > 0) {
-                    // Jika ada data, enable tombol
-                    $('#prev-step').prop('disabled', false);
-                } else {
-                    // Jika tidak ada data, disable tombol
-                    $('#prev-step').prop('disabled', true);
-                }
-            }
-
-            // Panggil fungsi saat halaman selesai di-load
-            $(document).ready(function() {
-                toggleButton();
-
-                // Contoh: Tambahkan event listener jika kamu menambah atau menghapus data dari tabel
-                $('#details-table tbody').on('DOMSubtreeModified', function() {
-                    toggleButton();
-                });
-            });
+            // Auto-close alert after 3 seconds
+            setTimeout(function() {
+                $('.alert').alert('close');
+            }, 3000);
         });
+
+        function validateForm() {
+            let destinationId = document.getElementById('destination_id').value;
+            if (destinationId === '') {
+                alert('Destination ID is required.');
+                return false;
+            }
+            return true;
+        }
     </script>
 @endpush
