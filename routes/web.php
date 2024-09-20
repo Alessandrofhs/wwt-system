@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
+use SebastianBergmann\CodeCoverage\Report\Xml\Report;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect('/login');
 });
+
 Route::get('/login', [AuthController::class, 'login_form'])->name('login.form');
 Route::get('/login-proses', [AuthController::class, 'login'])->name('login');
 Route::get('/register', [AuthController::class, 'register_form'])->name('register.form');
@@ -39,10 +41,8 @@ Route::delete('/destination/delete/{id}', [MasterDataController::class, 'deleted
 
 Route::get('/report', [ReportController::class, 'index'])->name('report');
 Route::post('/report/add', [ReportController::class, 'addReport'])->name('report.add');
-Route::put(uri: '/report/update/{id}', [ReportController::class, 'updatereport'])->name('report.update');
-Route::put(uri: '/report/update/details/{id}', [ReportController::class, 'updatedetails'])->name('details.update');
 Route::delete('/report/delete/{id}', [ReportController::class, 'deletereport'])->name('report.delete');
-Route::get('/report/{id}/details', [ReportController::class, 'getDetails']);
+Route::get('/form-limbah/{id}', [ReportController::class, 'getDetail'])->name('report.details');
 
 
 Route::get('/approval', [ApprovalController::class, 'index'])->name('approval');

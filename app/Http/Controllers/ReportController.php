@@ -80,13 +80,6 @@ class ReportController extends Controller
 
         return redirect()->back()->with('success', 'Report added successfully.');
     }
-    public function getDetails($id)
-    {
-        $details = DetailFormLimbah::with('limbah')->where('form_limbah_id', $id)->get();
-        // dd($details);
-        return response()->json(['details' => $details]);
-    }
-
     public function update_details(Request $request, $id)
     {
         // Validasi form

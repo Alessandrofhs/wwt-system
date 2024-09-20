@@ -50,7 +50,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="destination_id">Choose Destination</label>
-                                        <select class="form-control" id="destination_id">
+                                        <select class="form-control" id="destination_id" name="destination_id">
                                             <option value="">-- Select Destination --</option>
                                             @foreach ($destination as $d)
                                                 <option value="{{ $d->id }}">{{ $d->nama_destinasi }}</option>
@@ -167,6 +167,9 @@
                                         <th scope="col">Limbah Name</th>
                                         <th scope="col">Quantity</th>
                                         <th scope="col">Unit</th>
+                                        <th scope="col">Destination</th>
+                                        <th scope="col">No policy</th>
+                                        <th scope="col">No Truck</th>
                                         <th scope="col">Action</th>
                                     </tr>
                                 </thead>
@@ -212,8 +215,9 @@
                                 <td>{{ $item->status }}</td>
                                 <td>
                                     <!-- Tombol Edit -->
-                                    <button class="btn btn-info btn-sm" onclick="detail({{ $item->id }})">
-                                        <i class="icon-copy bi bi-eye"></i>
+                                    <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal"
+                                        data-bs-target="#detailModal-{{ $item->id }}">
+                                        <i class="icon-copy bi bi-eye"></i> Detail
                                     </button>
                                     <button class="btn btn-danger btn-sm" data-toggle="modal"
                                         data-target="#deletemodal-{{ $item->id }}">
@@ -231,6 +235,27 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal for Detail -->
+    <div class="modal fade" id="detailModal-{{ $item->id }}" tabindex="-1"
+        aria-labelledby="detailModalLabel{{ $item->id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailModalLabel{{ $item->id }}">Detail Limbah</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Kode Limbah:</strong> {{ $item->kode_limbah }}</p>
+                    <p><strong>Nama Limbah:</strong> {{ $item->nama_limbah }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Modal Delete -->
     @foreach ($report as $item)
@@ -264,7 +289,6 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            let limbah = @json($limbah);
             let kodeLimbahSelect = document.getElementById('kode_limbah');
             let namaLimbahInput = document.getElementById('nama_limbah');
             let quantityInput = document.getElementById('quantity');
@@ -273,7 +297,6 @@
             let noPolicyInput = document.getElementById('no_policy');
             let noTruckInput = document.getElementById('no_truck');
             let descriptionTextarea = document.getElementById('description');
-            let photoInput = document.getElementById('photo');
             let formDataInput = document.getElementById('form_data');
             let detailsTable = document.getElementById('details-table').getElementsByTagName('tbody')[0];
             let addButton = document.getElementById('add-detail');
@@ -282,21 +305,14 @@
             let nextButton = document.getElementById('next-step');
             let prevButton = document.getElementById('prev-step');
 
-            let isEditMode = false;
-            let rowToEdit = null;
-
-            function updatePreviousButtonState() {
-                prevButton.disabled = detailsTable.rows.length === 0;
-            }
-
-            nextButton.addEventListener('click', function() {
-                step1.style.display = 'none';
-                step2.style.display = 'block';
+            document.getElementById('next-step').addEventListener('click', function() {
+                document.getElementById('step-1').style.display = 'none';
+                document.getElementById('step-2').style.display = 'block';
             });
 
-            prevButton.addEventListener('click', function() {
-                step1.style.display = 'block';
-                step2.style.display = 'none';
+            document.getElementById('prev-step').addEventListener('click', function() {
+                document.getElementById('step-2').style.display = 'none';
+                document.getElementById('step-1').style.display = 'block';
             });
 
             kodeLimbahSelect.addEventListener('change', function() {
@@ -312,113 +328,51 @@
                 }
             });
 
-            function editDetail(row) {
-                rowToEdit = row; // Simpan referensi ke baris yang diedit
-                let cells = row.querySelectorAll('td');
-                kodeLimbahSelect.value = cells[0].textContent.trim();
-                namaLimbahInput.value = cells[1].textContent.trim();
-                quantityInput.value = cells[2].textContent.trim();
-                unitSelect.value = cells[3].textContent.trim();
+            addButton.addEventListener('click', function() {
+                let kodeLimbah = kodeLimbahSelect.value;
+                let namaLimbah = namaLimbahInput.value;
+                let quantity = quantityInput.value;
+                let unit = unitSelect.value;
+                let destination = destinationSelect.options[destinationSelect.selectedIndex].text;
+                let noPolicy = noPolicyInput.value;
+                let noTruck = noTruckInput.value;
 
-                // Set mode edit
-                isEditMode = true;
-                addButton.textContent = 'Save'; // Ubah label tombol menjadi 'Save'
+                if (kodeLimbah && namaLimbah && quantity && unit) {
+                    let row = detailsTable.insertRow();
+                    row.insertCell(0).textContent = kodeLimbah;
+                    row.insertCell(1).textContent = namaLimbah;
+                    row.insertCell(2).textContent = quantity; // Menyimpan quantity
+                    row.insertCell(3).textContent = unit; // Menyimpan unit
 
-                // Tampilkan Step 2 dan sembunyikan Step 1
-                step1.style.display = 'none';
-                step2.style.display = 'block';
-            }
-
-            document.getElementById('data-form').addEventListener('submit', function(event) {
-                event.preventDefault();
-                if (validateForm()) {
-                    let formData = {
-                        form_limbah: {
-                            destination_id: isEditMode ? formDataInput.dataset.oldDestinationId :
-                                destinationSelect.value,
-                            no_policy: isEditMode ? formDataInput.dataset.oldNoPolicy : noPolicyInput
-                                .value,
-                            no_truck: isEditMode ? formDataInput.dataset.oldNoTruck : noTruckInput
-                                .value,
-                            description: descriptionTextarea.value
-                        },
-                        details: getDetails(),
-                        is_edit_mode: isEditMode // Tambahkan parameter untuk menandakan mode edit
-                    };
-
-                    formDataInput.value = JSON.stringify(formData);
-
-                    this.submit();
+                    let actionCell = row.insertCell(4);
+                    let removeButton = document.createElement('button');
+                    removeButton.className = 'btn btn-danger btn-sm';
+                    removeButton.innerHTML = '<i class="icon-copy bi bi-trash"></i>';
+                    removeButton.addEventListener('click', function() {
+                        detailsTable.deleteRow(row.rowIndex);
+                    });
+                    actionCell.appendChild(removeButton);
+                } else {
+                    alert('Please fill all fields before adding.');
                 }
             });
 
-
-            function showDetail(id) {
-                fetch(`/report/${id}/details`)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Data received:', data); // Debugging
-
-                        // Clear existing rows
-                        detailsTable.innerHTML = '';
-
-                        // Add new rows to the table
-                        data.details.forEach((detail) => {
-                            let row = detailsTable.insertRow();
-                            row.insertCell(0).textContent = detail.limbah.kode_limbah;
-                            row.insertCell(1).textContent = detail.limbah.nama_limbah;
-                            row.insertCell(2).textContent = detail.quantity;
-                            row.insertCell(3).textContent = detail.unit;
-
-                            let actionCell = row.insertCell(4);
-                            // Create edit button
-                            let editButton = document.createElement('button');
-                            editButton.className = 'btn btn-warning btn-sm';
-                            editButton.innerHTML = '<i class="icon-copy bi bi-pencil"></i>';
-                            editButton.addEventListener('click', function() {
-                                editDetail(row);
-                            });
-                            actionCell.appendChild(editButton);
-
-                            // Create remove button
-                            let removeButton = document.createElement('button');
-                            removeButton.className = 'btn btn-danger btn-sm';
-                            removeButton.innerHTML = '<i class="icon-copy bi bi-trash"></i>';
-                            removeButton.addEventListener('click', function() {
-                                detailsTable.deleteRow(row.rowIndex);
-                                updatePreviousButtonState();
-                            });
-                            actionCell.appendChild(removeButton);
-                        });
-
-                        updatePreviousButtonState();
-                    })
-                    .catch(error => console.error('Error fetching details:', error));
-            }
-
-            // Attach the showDetail function to the detail button
-            window.detail = function(id) {
-                showDetail(id);
-            };
-
-            // Event listener for form submission
             document.getElementById('data-form').addEventListener('submit', function(event) {
                 event.preventDefault();
-                if (validateForm()) {
-                    let formData = {
-                        form_limbah: {
-                            destination_id: destinationSelect.value,
-                            no_policy: noPolicyInput.value,
-                            no_truck: noTruckInput.value,
-                            description: descriptionTextarea.value
-                        },
-                        details: getDetails()
-                    };
+                let form = this;
 
-                    formDataInput.value = JSON.stringify(formData);
+                let formData = {
+                    form_limbah: {
+                        destination_id: destinationSelect.value,
+                        no_policy: noPolicyInput.value,
+                        no_truck: noTruckInput.value,
+                        description: descriptionTextarea.value
+                    },
+                    details: getDetails()
+                };
 
-                    this.submit();
-                }
+                formDataInput.value = JSON.stringify(formData);
+                form.submit();
             });
 
             function getDetails() {
@@ -437,29 +391,21 @@
                 return details;
             }
 
-            function closeForm() {
-                isEditMode = false;
-                addButton.textContent = 'Add'; // Ubah label tombol kembali ke 'Add'
-                step1.style.display = 'block';
-                step2.style.display = 'none';
+            function toggleButton() {
+                // Cek apakah ada data pada tbody
+                if ($('#details-table tbody tr').length > 0) {
+                    $('#prev-step').prop('disabled', false);
+                } else {
+                    $('#prev-step').prop('disabled', true);
+                }
             }
 
-            // Initial check for the Previous button state
-            updatePreviousButtonState();
-
-            // Auto-close alert after 3 seconds
-            setTimeout(function() {
-                $('.alert').alert('close');
-            }, 3000);
+            $(document).ready(function() {
+                toggleButton();
+                $('#details-table tbody').on('DOMSubtreeModified', function() {
+                    toggleButton();
+                });
+            });
         });
-
-        function validateForm() {
-            let destinationId = document.getElementById('destination_id').value;
-            if (destinationId === '') {
-                alert('Destination ID is required.');
-                return false;
-            }
-            return true;
-        }
     </script>
 @endpush

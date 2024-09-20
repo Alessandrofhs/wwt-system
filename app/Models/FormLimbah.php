@@ -21,6 +21,6 @@ class FormLimbah extends Model
     }
     public function detailLimbah()
     {
-        return $this->hasMany(DetailFormLimbah::class, 'form_limbah_id');
+        return $this->hasOne(DetailFormLimbah::class, 'form_limbah_id');
     }
 }
