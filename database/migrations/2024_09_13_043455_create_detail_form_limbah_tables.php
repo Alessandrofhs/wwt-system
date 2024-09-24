@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId('limbah_id')->constrained()->onDelete('cascade'); // Menyimpan ID limbah
             $table->integer('quantity'); // Menyimpan quantity limbah
             $table->string('unit'); // Menyimpan unit (kg, pcs, dll)
+            $table->text('description');
+            $table->string('photo')->nullable();
             $table->timestamps(); // Menyimpan timestamp untuk created_at dan updated_at
         });
     }

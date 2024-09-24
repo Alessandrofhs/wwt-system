@@ -13,112 +13,136 @@ class ReportController extends Controller
 {
     public function index()
     {
-        $report = FormLimbah::orderBy('updated_at', 'desc')->with('destination', 'detailLimbah')->get();
+        $report = FormLimbah::orderBy('updated_at', 'desc')->with('destination', 'details')->get();
         $destination = Destination::all();
         $limbah = Limbah::all();
         return view('report', compact('report', 'destination', 'limbah'));
     }
     public function addReport(Request $request)
     {
-        // Validate the form_data field
-        $validated = $request->validate([
-            'form_data' => 'required|string', // form_data should be a JSON string
-            'photo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // Validate photo if exists
-        ]);
-
-        // Decode form_data
-        $formData = json_decode($validated['form_data'], true);
-
-        // Debugging to see the structure of form_data
-
-
-        // Check if decoding succeeded and formData is an array
-        if (!is_array($formData)) {
-            return redirect()->back()->withErrors('Invalid form data format.');
-        }
-
-        // Extract form_limbah data and details
-        $formLimbahData = $formData['form_limbah'] ?? null;
-
-        $details = $formData['details'] ?? [];
-
-
-        // Make sure form_limbah data is present
-        if (!$formLimbahData) {
-            return redirect()->back()->withErrors('Form Limbah data is missing.');
-        }
-
-        // Create and save the main report data (Form Limbah)
-        $report = new FormLimbah();
-        $report->destination_id = $formLimbahData['destination_id'] ?? null;
-        $report->no_policy = $formLimbahData['no_policy'] ?? null;
-        $report->no_truck = $formLimbahData['no_truck'] ?? null;
-        $report->status = "Pending";
-        $report->description = $formLimbahData['description'] ?? null;
-
-        // Handle photo upload if exists
-        if ($request->hasFile('photo')) {
-            $photo = $request->file('photo');
-            $path = $photo->store('photos', 'public');
-            $report->photo = $path;
-        }
-
-        // Save the Form Limbah to the database
-        $report->save();
-
-        // Save the details (assumed to be in 'details' key in form_data)
-        if (is_array($details)) {
-            foreach ($details as $detail) {
-                $detailFormLimbah = new DetailFormLimbah();
-                $detailFormLimbah->form_limbah_id = $report->id;
-                $detailFormLimbah->limbah_id = $detail['kode_limbah'] ?? null; // Assuming 'kode_limbah' maps to 'limbah_id'
-                $detailFormLimbah->quantity = $detail['quantity'] ?? 0;
-                $detailFormLimbah->unit = $detail['unit'] ?? 'KG'; // Default unit if not provided
-                $detailFormLimbah->save();
-            }
-        }
-
-        return redirect()->back()->with('success', 'Report added successfully.');
-    }
-    public function update_details(Request $request, $id)
-    {
-        // Validasi form
+        dd($request);
+        // Validasi input dari request
         $request->validate([
-            'destination_id' => 'required_if:is_edit_mode,false|nullable',
-            'no_policy' => 'required_if:is_edit_mode,false|nullable',
-            'no_truck' => 'required_if:is_edit_mode,false|nullable',
-            'description' => 'required',
-            'details.*.kode_limbah' => 'required',
-            'details.*.quantity' => 'required|numeric',
-            'details.*.unit' => 'required',
+            'destination_id' => 'required|integer',
+            'license_plate' => 'required|string',
+            'details' => 'required|json', // details adalah JSON string
         ]);
 
+        try {
+            // Simpan data form limbah
+            $formLimbah = new FormLimbah();
+            $formLimbah->destination_id = $request->input('destination_id');
+            $formLimbah->license_plate = $request->input('license_plate');
+            $formLimbah->status = 'pending'; // Set status awal ke 'pending'
+            $formLimbah->save();
+
+            // Decode JSON dari details yang dikirimkan sebagai array
+            $details = json_decode($request->input('details'), true);
+
+            // Simpan setiap detail limbah yang terkait dengan form limbah yang baru disimpan
+            foreach ($details as $detail) {
+                $detailLimbah = new DetailFormLimbah();
+                $detailLimbah->form_limbah_id = $formLimbah->id; // ID form limbah
+                $detailLimbah->limbah_id = $detail['limbah_id'];
+                $detailLimbah->quantity = $detail['quantity'];
+                $detailLimbah->unit = $detail['unit'];
+                $detailLimbah->description = $detail['description'] ?? ''; // Deskripsi opsional
+                $detailLimbah->photo = $detail['photo'] ?? null; // Foto opsional
+                $detailLimbah->save();
+            }
+
+            // Mengirimkan respons sukses
+            return response()->json([
+                'message' => 'Form limbah dan detail berhasil disimpan!',
+            ], 200);
+        } catch (\Exception $e) {
+            // Mengirimkan respons jika terjadi kesalahan
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat menyimpan data!',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function showDetail($id)
+    {
+        // Ambil detail dari database berdasarkan id
+        $detail = FormLimbah::with('details.limbah')->find($id);
+
+        // Jika detail ditemukan, kembalikan sebagai JSON
+        if ($detail) {
+            return response()->json($detail);
+        } else {
+            return response()->json(['message' => 'Detail tidak ditemukan'], 404);
+        }
+    }
+    public function show($id)
+    {
+        // Mengambil detail dari database berdasarkan ID
+        $detail = DetailFormLimbah::find($id);
+
+        // Cek apakah detail ditemukan
+        if (!$detail) {
+            return response()->json(['message' => 'Detail not found'], 404);
+        }
+
+        // Kembalikan detail sebagai respons JSON
+        return response()->json($detail);
+    }
+    public function updateDetail(Request $request, $id)
+    {
         // Temukan FormLimbah
         $formLimbah = FormLimbah::findOrFail($id);
 
-        // Update FormLimbah jika tidak dalam mode edit
-        if (!$request->has('is_edit_mode') || !$request->is_edit_mode) {
-            $formLimbah->destination_id = $request->input('form_limbah.destination_id');
-            $formLimbah->no_policy = $request->input('form_limbah.no_policy');
-            $formLimbah->no_truck = $request->input('form_limbah.no_truck');
-            $formLimbah->description = $request->input('form_limbah.description');
-            $formLimbah->save();
-        }
+        // Update FormLimbah
+        $formLimbah->destination_id = $request->input('destination_id');
+        $formLimbah->license_plate = $request->input('license_plate');
+        $formLimbah->status = $request->input('status');
+        $formLimbah->save();
 
-        // Update DetailFormLimbah
+        // Ambil array detail dari request
         $details = $request->input('details');
+
+        // Loop melalui setiap detail
         foreach ($details as $detail) {
-            $detailFormLimbah = DetailFormLimbah::where('form_limbah_id', $formLimbah->id)
-                ->where('kode_limbah', $detail['kode_limbah'])
-                ->first();
+            $detailFormLimbah = DetailFormLimbah::find($detail['id']);
+
+            // Jika detail ditemukan, perbarui
             if ($detailFormLimbah) {
+                $detailFormLimbah->form_limbah_id = $formLimbah->id;
+                $detailFormLimbah->limbah_id = $detail['limbah_id'];
                 $detailFormLimbah->quantity = $detail['quantity'];
                 $detailFormLimbah->unit = $detail['unit'];
+                $detailFormLimbah->description = $detail['description'];
+                $detailFormLimbah->photo = $detail['photo']; // Pastikan ini sesuai
                 $detailFormLimbah->save();
             }
         }
 
-        return redirect()->route('form_limbahs.show', $id)->with('success', 'Data berhasil diperbarui.');
+        return response()->json(['success' => 'Data berhasil diperbarui.']);
     }
-    public function deletereport() {}
+
+    public function deleteReport($id)
+    {
+        try {
+            // Temukan FormLimbah berdasarkan ID
+            $formLimbah = FormLimbah::findOrFail($id);
+
+            // Hapus semua detail yang terkait dengan FormLimbah
+            $formLimbah->details()->delete(); // Pastikan ada relasi details() di model FormLimbah
+
+            // Hapus FormLimbah
+            $formLimbah->delete();
+
+            // Mengirimkan respons sukses
+            return response()->json([
+                'message' => 'Form limbah berhasil dihapus!',
+            ], 200);
+        } catch (\Exception $e) {
+            // Mengirimkan respons jika terjadi kesalahan
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat menghapus data!',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

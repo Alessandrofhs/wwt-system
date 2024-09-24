@@ -19,8 +19,8 @@ class FormLimbah extends Model
     {
         return $this->belongsTo(Destination::class, 'destination_id');
     }
-    public function detailLimbah()
+    public function details()
     {
-        return $this->hasOne(DetailFormLimbah::class, 'form_limbah_id');
+        return $this->hasMany(DetailFormLimbah::class, 'form_limbah_id');
     }
 }
