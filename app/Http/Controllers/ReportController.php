@@ -7,7 +7,6 @@ use App\Models\DetailFormLimbah;
 use App\Models\FormLimbah;
 use App\Models\Limbah;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -18,76 +17,49 @@ class ReportController extends Controller
         $limbah = Limbah::all();
         return view('report', compact('report', 'destination', 'limbah'));
     }
-    public function addReport(Request $request)
+    public function store(Request $request)
     {
-        dd($request);
-        // Validasi input dari request
-        $request->validate([
+        // Validasi input dari form
+        $data = $request->validate([
             'destination_id' => 'required|integer',
             'license_plate' => 'required|string',
-            'details' => 'required|json', // details adalah JSON string
+            'details' => 'required|json' // Validasi sebagai JSON
         ]);
 
-        try {
-            // Simpan data form limbah
-            $formLimbah = new FormLimbah();
-            $formLimbah->destination_id = $request->input('destination_id');
-            $formLimbah->license_plate = $request->input('license_plate');
-            $formLimbah->status = 'pending'; // Set status awal ke 'pending'
-            $formLimbah->save();
+        // Decode JSON menjadi array
+        $details = json_decode($data['details'], true);
 
-            // Decode JSON dari details yang dikirimkan sebagai array
-            $details = json_decode($request->input('details'), true);
+        // Simpan data ke tabel form_limbah
+        $formLimbah = FormLimbah::create([
+            'destination_id' => $data['destination_id'],
+            'license_plate' => $data['license_plate'],
+            'status' => 'pending',
+        ]);
 
-            // Simpan setiap detail limbah yang terkait dengan form limbah yang baru disimpan
-            foreach ($details as $detail) {
-                $detailLimbah = new DetailFormLimbah();
-                $detailLimbah->form_limbah_id = $formLimbah->id; // ID form limbah
-                $detailLimbah->limbah_id = $detail['limbah_id'];
-                $detailLimbah->quantity = $detail['quantity'];
-                $detailLimbah->unit = $detail['unit'];
-                $detailLimbah->description = $detail['description'] ?? ''; // Deskripsi opsional
-                $detailLimbah->photo = $detail['photo'] ?? null; // Foto opsional
-                $detailLimbah->save();
-            }
-
-            // Mengirimkan respons sukses
-            return response()->json([
-                'message' => 'Form limbah dan detail berhasil disimpan!',
-            ], 200);
-        } catch (\Exception $e) {
-            // Mengirimkan respons jika terjadi kesalahan
-            return response()->json([
-                'message' => 'Terjadi kesalahan saat menyimpan data!',
-                'error' => $e->getMessage(),
-            ], 500);
+        // Simpan detail limbah ke tabel detail_form_limbah
+        foreach ($details as $detail) {
+            DetailFormLimbah::create([
+                'limbah_id' => $detail['kode_limbah'], // Sesuaikan dengan nama kolom di database
+                'form_limbah_id' => $formLimbah->id, // ID dari form_limbah yang baru dibuat
+                'quantity' => $detail['quantity'],
+                'unit' => $detail['unit'],
+                'description' => $detail['description'],
+                'photo' => $detail['photo']
+            ]);
         }
-    }
-    public function showDetail($id)
-    {
-        // Ambil detail dari database berdasarkan id
-        $detail = FormLimbah::with('details.limbah')->find($id);
 
-        // Jika detail ditemukan, kembalikan sebagai JSON
-        if ($detail) {
-            return response()->json($detail);
-        } else {
-            return response()->json(['message' => 'Detail tidak ditemukan'], 404);
-        }
+        // Redirect dengan pesan sukses
+        return redirect()->route('report')->with('success', 'Report created successfully.');
     }
+
     public function show($id)
     {
-        // Mengambil detail dari database berdasarkan ID
-        $detail = DetailFormLimbah::find($id);
-
-        // Cek apakah detail ditemukan
-        if (!$detail) {
-            return response()->json(['message' => 'Detail not found'], 404);
-        }
-
-        // Kembalikan detail sebagai respons JSON
-        return response()->json($detail);
+        $formLimbah = FormLimbah::with('details')->findOrFail($id);
+        return response()->json([
+            'details' => $formLimbah->detail
+        ]);
     }
+
     public function updateDetail(Request $request, $id)
     {
         // Temukan FormLimbah

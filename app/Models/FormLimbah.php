@@ -10,10 +10,7 @@ class FormLimbah extends Model
     use HasFactory;
     protected $fillable = [
         'destination_id',
-        'no_policy',
-        'no_truck',
-        'description',
-        'photo',
+        'license_plate',
     ];
     public function destination()
     {

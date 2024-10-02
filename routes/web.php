@@ -40,12 +40,10 @@ Route::put('/destination/update/{id}', [MasterDataController::class, 'updatedest
 Route::delete('/destination/delete/{id}', [MasterDataController::class, 'deletedestination'])->name('destination.delete');
 
 Route::get('/report', [ReportController::class, 'index'])->name('report');
-Route::post('/report/add', [ReportController::class, 'addReport'])->name('report.add');
+Route::post('/report/add', [ReportController::class, 'store'])->name('report.store');
+Route::get('/report/{id}', [ReportController::class, 'show'])->name('report.show');
 Route::put('/report/update/{id}', [ReportController::class, 'updateDetail'])->name('report.update');
 Route::delete('/report/delete/{id}', [ReportController::class, 'deleteReport'])->name('report.delete');
-Route::get('/form-limbah/{id}', [ReportController::class, 'getDetail'])->name('report.details');
-Route::get('/report/detail/{id}', [ReportController::class, 'showDetail']);
-Route::get('/api/details/{id}', action: [ReportController::class, 'show']);
 
 
 

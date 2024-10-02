@@ -13,6 +13,8 @@ class DetailFormLimbah extends Model
         'limbah_id',
         'quantity',
         'unit',
+        'description',
+        'photo'
     ];
     public function formLimbah()
     {
