@@ -33,6 +33,7 @@ Route::get('/limbah', [MasterDataController::class, 'index_limbah'])->name('limb
 Route::post('limbah/add', [MasterDataController::class, 'addlimbah'])->name('limbah.add');
 Route::put('/limbah/update/{id}', [MasterDataController::class, 'updatelimbah'])->name('limbah.update');
 Route::delete('/limbah/delete/{id}', [MasterDataController::class, 'deletelimbah'])->name('limbah.delete');
+Route::get('/api/limbah', [MasterDataController::class, 'getLimbah']);
 
 Route::get('/destination', [MasterDataController::class, 'index_destination'])->name('destination');
 Route::post('/destination/add', [MasterDataController::class, 'adddestination'])->name('destination.add');
@@ -41,10 +42,10 @@ Route::delete('/destination/delete/{id}', [MasterDataController::class, 'deleted
 
 Route::get('/report', [ReportController::class, 'index'])->name('report');
 Route::post('/report/add', [ReportController::class, 'store'])->name('report.store');
-Route::get('/report/{id}', [ReportController::class, 'show'])->name('report.show');
+Route::get('/report/detail/{id}', [ReportController::class, 'show'])->name('report.show');
+Route::put('/report/detail/update/{id}', [ReportController::class, 'updatedetail']);
+Route::delete('/report/detail/delete/{id}', [ReportController::class, 'destroydetail']);
 Route::put('/report/update/{id}', [ReportController::class, 'updateDetail'])->name('report.update');
 Route::delete('/report/delete/{id}', [ReportController::class, 'deleteReport'])->name('report.delete');
-
-
 
 Route::get('/approval', [ApprovalController::class, 'index'])->name('approval');

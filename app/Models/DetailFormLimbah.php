@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class DetailFormLimbah extends Model
 {
     use HasFactory;
+    protected $table = 'tr_detail_form_limbahs';
     protected $fillable = [
         'form_limbah_id',
         'limbah_id',

@@ -57,7 +57,11 @@ class MasterDataController extends Controller
         $limbah->delete();
         return redirect()->route('limbah')->with('succes', 'limbah deleted successfully');
     }
-
+    public function getLimbah()
+    {
+        $limbah = Limbah::all(); // Ambil semua data limbah dari tabel limbah
+        return response()->json($limbah);
+    }
     public function index_destination()
     {
         $destination = Destination::orderBy('updated_at', 'desc')->get();

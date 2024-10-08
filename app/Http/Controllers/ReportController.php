@@ -54,43 +54,48 @@ class ReportController extends Controller
 
     public function show($id)
     {
-        $formLimbah = FormLimbah::with('details')->findOrFail($id);
+        $formLimbah = FormLimbah::with('details.limbah')->findOrFail($id);
         return response()->json([
-            'details' => $formLimbah->detail
+            'details' => $formLimbah->details
         ]);
     }
-
-    public function updateDetail(Request $request, $id)
+    public function destroydetail($id)
     {
-        // Temukan FormLimbah
-        $formLimbah = FormLimbah::findOrFail($id);
+        $detail = DetailFormLimbah::findOrFail($id);
+        $detail->delete();
 
-        // Update FormLimbah
-        $formLimbah->destination_id = $request->input('destination_id');
-        $formLimbah->license_plate = $request->input('license_plate');
-        $formLimbah->status = $request->input('status');
-        $formLimbah->save();
-
-        // Ambil array detail dari request
-        $details = $request->input('details');
-
-        // Loop melalui setiap detail
-        foreach ($details as $detail) {
-            $detailFormLimbah = DetailFormLimbah::find($detail['id']);
-
-            // Jika detail ditemukan, perbarui
-            if ($detailFormLimbah) {
-                $detailFormLimbah->form_limbah_id = $formLimbah->id;
-                $detailFormLimbah->limbah_id = $detail['limbah_id'];
-                $detailFormLimbah->quantity = $detail['quantity'];
-                $detailFormLimbah->unit = $detail['unit'];
-                $detailFormLimbah->description = $detail['description'];
-                $detailFormLimbah->photo = $detail['photo']; // Pastikan ini sesuai
-                $detailFormLimbah->save();
-            }
+        return response()->json(['message' => 'Detail deleted successfully']);
+    }
+    public function updatedetail(Request $request, $id)
+    {
+        // dd($request);
+        $detail = DetailFormLimbah::find($id);
+        if (!$detail) {
+            return response()->json(['error' => 'Detail not found'], 404);
         }
 
-        return response()->json(['success' => 'Data berhasil diperbarui.']);
+        // Validasi input yang diperlukan
+        $request->validate([
+            'limbah_id' => 'required|exists:tm_limbahs,id', // Pastikan limbah_id valid
+            'quantity' => 'required|numeric',
+            'unit' => 'required|string',
+        ]);
+
+        // Ambil nama limbah berdasarkan limbah_id yang dipilih
+        $limbah = Limbah::find($request->input('limbah_id'));
+        if (!$limbah) {
+            return response()->json(['error' => 'Limbah not found'], 404);
+        }
+
+        // Update detail
+        $detail->limbah_id = $request->input('limbah_id');
+        // $detail->nama_limbah = $limbah->nama_limbah; // Ambil nama limbah dari objek Limbah
+        $detail->quantity = $request->input('quantity');
+        $detail->unit = $request->input('unit');
+        $detail->save();
+
+        // Mengembalikan respons sukses
+        return response()->json(['message' => 'Detail updated successfully', 'detail' => $detail]);
     }
 
     public function deleteReport($id)

@@ -8,9 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class FormLimbah extends Model
 {
     use HasFactory;
+    protected $table = 'tr_form_limbahs';
     protected $fillable = [
         'destination_id',
         'license_plate',
+        'status',
     ];
     public function destination()
     {

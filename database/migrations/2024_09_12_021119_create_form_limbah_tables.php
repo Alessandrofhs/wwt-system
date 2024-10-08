@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('form_limbahs', function (Blueprint $table) {
+        Schema::create('tr_form_limbahs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('destination_id')->constrained()->onDelete('cascade'); // Menyimpan ID tujuan
+            $table->foreignId('destination_id')->constrained('tm_destinations')->onDelete('cascade'); // Menyimpan ID tujuan
             $table->string('license_plate'); // Menyimpan nomor kebijakan
             $table->string('status')->nullable();
             $table->timestamps(); // Menyimpan timestamp untuk created_at dan updated_at

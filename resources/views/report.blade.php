@@ -296,7 +296,6 @@
             previousButton.disabled = true;
         });
 
-
         function addDetailToHiddenInput(kodeLimbah, namaLimbah, quantity, unit, description, photo) {
             const detailsInput = document.getElementById('details');
             // Get existing details or initialize empty array
@@ -322,15 +321,41 @@
             console.log("Data saved:", row.innerHTML);
         }
 
-        // Example remove function (if you need it)
         function removeDetail(button) {
-            const row = button.parentNode.parentNode; // Get the row of the button
-            row.parentNode.removeChild(row); // Remove the row from the table
+            // Dapatkan baris (tr) dari tombol yang diklik
+            var row = button.closest('tr');
+            // Hapus baris tersebut dari tabel
+            row.remove();
+        }
+        // Example remove function (if you need it)
+        function removestoreDetail(button) {
+            const detailId = button.getAttribute('data-id'); // Ambil ID detail dari atribut data-id
+            const row = button.closest('tr'); // Ambil baris (tr) tempat tombol berada
+
+            if (confirm("Are you sure you want to delete this detail?")) {
+                fetch(`/report/detail/delete/${detailId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Hapus baris dari tabel jika penghapusan berhasil
+                            row.remove();
+                        } else {
+                            alert('Error deleting detail.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            }
         }
 
         // Function to show report details
         function showDetail(id) {
-            fetch(`/report/${id}`)
+            fetch(`/report/detail/${id}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -357,12 +382,13 @@
             details.forEach(detail => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-            <td>${detail.limbah_id}</td>
-            <td>${detail.description}</td>
+            <td>${detail.limbah.kode_limbah}</td>
+            <td>${detail.limbah.nama_limbah}</td>
             <td>${detail.quantity}</td>
             <td>${detail.unit}</td>
             <td>
-                <button type="button" class="btn btn-danger btn-sm" onclick="removeDetail(this)">Remove</button>
+                <button type="button" class="btn btn-warning btn-sm" data-id="${detail.id}" onclick="editDetail(this)">Edit</button>
+                <button type="button" class="btn btn-danger btn-sm" data-id="${detail.id}" onclick="removestoreDetail(this)">Remove</button>
             </td>
         `;
                 tbody.appendChild(row);
@@ -374,7 +400,7 @@
             if (confirm("Are you sure you want to delete this report?")) {
                 // Implement the AJAX request to delete the report
                 // Example:
-                fetch(`/report/${id}`, {
+                fetch(`/report/delete/${id}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -392,6 +418,128 @@
                         console.error('Error:', error);
                     });
             }
+        }
+
+        function editDetail(button) {
+            const detailId = button.getAttribute('data-id'); // Ambil ID detail dari atribut data-id
+            const row = button.closest('tr'); // Ambil baris (tr) tempat tombol berada
+
+            // Ambil sel dalam baris yang ingin diedit
+            const kodeLimbahCell = row.querySelector('td:nth-child(1)'); // Mengganti limbahIdCell dengan kodeLimbahCell
+            const namaLimbahCell = row.querySelector('td:nth-child(2)');
+            const quantityCell = row.querySelector('td:nth-child(3)');
+            const unitCell = row.querySelector('td:nth-child(4)');
+
+            // Simpan nilai lama untuk digunakan saat cancel
+            const oldKodeLimbah = kodeLimbahCell.textContent.trim(); // Mengganti oldLimbahId dengan oldKodeLimbah
+            const oldNamaLimbah = namaLimbahCell.textContent.trim();
+            const oldQuantity = quantityCell.textContent.trim();
+            const oldUnit = unitCell.textContent.trim();
+
+            // Fetch data limbah dari server untuk populasi dropdown
+            fetch('/api/limbah') // Pastikan Anda membuat route API untuk mendapatkan data limbah
+                .then(response => response.json())
+                .then(data => {
+                    // Buat dropdown untuk limbah_id dengan data yang diterima dari server
+                    let limbahDropdown = `<select id="edit-limbah-id" class="form-control">`;
+                    data.forEach(limbah => {
+                        // Pastikan membandingkan ID dengan benar, gunakan tipe data yang sama
+                        limbahDropdown += `
+                    <option value="${limbah.id}" ${oldKodeLimbah == limbah.kode_limbah ? 'selected' : ''}>
+                        ${limbah.kode_limbah} <!-- Menggunakan kode_limbah untuk ditampilkan -->
+                    </option>
+                `;
+                    });
+                    limbahDropdown += `</select>`;
+
+                    // Replace cell content dengan dropdown untuk limbah_id
+                    kodeLimbahCell.innerHTML = limbahDropdown;
+
+                    // Menampilkan nama limbah yang sesuai dengan oldKodeLimbah jika tidak ada yang dipilih
+                    namaLimbahCell.innerHTML = `
+                <input type="text" value="${oldNamaLimbah}" class="form-control" id="edit-nama-limbah" disabled>
+            `;
+
+                    quantityCell.innerHTML = `
+                <input type="number" value="${oldQuantity}" class="form-control" id="edit-quantity">
+            `;
+
+                    // Tambahkan dropdown untuk unit dengan opsi "kg" dan "pcs"
+                    unitCell.innerHTML = `
+                <select id="edit-unit" class="form-control">
+                    <option value="kg" ${oldUnit === 'kg' ? 'selected' : ''}>kg</option>
+                    <option value="pcs" ${oldUnit === 'pcs' ? 'selected' : ''}>pcs</option>
+                </select>
+            `;
+
+                    // Ganti tombol "Edit" dengan tombol "Save" dan "Cancel"
+                    button.outerHTML = `
+                <button type="button" class="btn btn-success btn-sm" data-id="${detailId}" onclick="saveEditDetail(this)">Save</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelEdit(this, ${detailId}, '${oldKodeLimbah}', '${oldNamaLimbah}', '${oldQuantity}', '${oldUnit}')">Cancel</button>
+            `;
+
+                    // Tambahkan event listener untuk mengubah nama limbah saat kode dipilih
+                    document.getElementById('edit-limbah-id').addEventListener('change', function() {
+                        const selectedLimbahId = this.value;
+                        const selectedLimbah = data.find(limbah => limbah.id == selectedLimbahId);
+                        if (selectedLimbah) {
+                            document.getElementById('edit-nama-limbah').value = selectedLimbah
+                                .nama_limbah; // Mengupdate nama limbah
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching limbah data:', error);
+                });
+        }
+
+        function saveEditDetail(button) {
+            const detailId = button.getAttribute('data-id'); // Ambil ID detail dari atribut data-id
+            const row = button.closest('tr'); // Ambil baris (tr) tempat tombol berada
+
+            // Ambil nilai dari input
+            const limbahId = row.querySelector('#edit-limbah-id').value;
+            const namaLimbah = row.querySelector('#edit-nama-limbah').value;
+            const quantity = row.querySelector('#edit-quantity').value;
+            const unit = row.querySelector('#edit-unit').value;
+
+            // Ambil CSRF token dari meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // Buat payload untuk dikirim
+            const payload = {
+                limbah_id: limbahId,
+                nama_limbah: namaLimbah,
+                quantity: quantity,
+                unit: unit,
+                _token: csrfToken // Tambahkan CSRF token ke dalam payload
+            };
+
+            // Kirim permintaan menggunakan jQuery AJAX
+            $.ajax({
+                url: `/report/detail/update/${detailId}`,
+                type: 'PUT', // Pastikan menggunakan PUT untuk pembaruan
+                data: payload,
+                success: function(response) {
+                    // Tangani respons sukses
+                    console.log('Success:', response);
+                    // Update tampilan atau beri notifikasi ke user
+                    alert('Detail updated successfully!');
+                    console.log(detailId);
+                    showDetail(detailId); // Pastikan fungsi ini memuat detail yang benar
+                },
+                error: function(xhr, status, error) {
+                    // Tangani kesalahan
+                    console.error('Error:', error);
+                    alert('Error occurred while updating detail.');
+                }
+            });
+        }
+
+
+        function cancelEdit(button, detailId) {
+            // Panggil fungsi showDetail dengan detailId yang sesuai
+            showDetail(detailId);
         }
 
         // Populate Limbah Name when selecting a Limbah Code
